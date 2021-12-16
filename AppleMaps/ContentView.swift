@@ -37,7 +37,7 @@ final class ContentViewModel : NSObject, ObservableObject , CLLocationManagerDel
         }
         else
         {
-            print ("location services are off")
+            print ("location services are off")             //location services are disabled, we could prompt user to enable 
         }
     }
     
@@ -51,7 +51,7 @@ final class ContentViewModel : NSObject, ObservableObject , CLLocationManagerDel
         guard let locationManager = locationManager else {return}       //since locationManager is optional in line 28 we must unwrap it
 
         
-        switch locationManager.authorizationStatus{
+        switch locationManager.authorizationStatus{                     //locationManager.authorizationStatus will import all the cases for us
             
         case .notDetermined:
             locationManager.requestWhenInUseAuthorization()
