@@ -9,11 +9,15 @@ import SwiftUI
 import MapKit
 
 struct ContentView: View {
-    @State private var viewModel = ContentViewModel()
-    @State private var region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 37.331516, longitude: -121.891054), span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.1))
+    @StateObject private var viewModel = ContentViewModel()
+    
     
     var body: some View {
-        Map(coordinateRegion: $region).ignoresSafeArea()
+        Map(coordinateRegion: $viewModel.region, showsUserLocation: true)
+            .ignoresSafeArea()
+            .onAppear{
+            viewModel.checkIfLocationisEnabled()
+        }
     }
 }
 
@@ -25,15 +29,21 @@ struct ContentView_Previews: PreviewProvider {
 
 final class ContentViewModel : NSObject, ObservableObject , CLLocationManagerDelegate
                                                             //CLLocationManagerDelegate listens to chnages with settings if location is ever turned off, not sure about NSObject
+                                                            //whenever you're working with a delegate you must set the delegate
 {
+    @Published  var region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 37.331516, longitude: -121.891054), span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.1))
+    
+    
+    
     var locationManager : CLLocationManager?                //locationManger is of type CLLlocationManager, ? means that it is optional.
     
     func checkIfLocationisEnabled ()                        //func to check location is enabled
     {
         if CLLocationManager.locationServicesEnabled()      //if statement to check if the locaiton is enabled and if so set locationManger to CLLlocationManager. LocationServices returns a bool value
         {
-            locationManager = CLLocationManager()           //creating a locations manager, once this is created it makes a call to locationManagerDidChangeAuthorization Automatically 
+            locationManager = CLLocationManager()           //creating a locations manager, once this is created it makes a call to locationManagerDidChangeAuthorization Automatically
             //locationManager?.desiredAccuracy = kCLLocationAccuracyBest     this depends on what you're application is using user location for
+            locationManager!.delegate = self                //must set the delegate when using aything to do with delegates, we are for unwraping it. Usually a bad idea but we can force it here
         }
         else
         {
@@ -46,7 +56,7 @@ final class ContentViewModel : NSObject, ObservableObject , CLLocationManagerDel
     //2.might already have permission
     //3.restricted.
      
-    func checkApplicationAuthorization()
+    private func checkApplicationAuthorization()
     {
         guard let locationManager = locationManager else {return}       //since locationManager is optional in line 28 we must unwrap it
 
@@ -59,10 +69,8 @@ final class ContentViewModel : NSObject, ObservableObject , CLLocationManagerDel
             print("You locaiton is resticted likely due to parental controls")
         case .denied:
             print ("You have denied current location for this application, open setting to change it ")
-        case .authorizedAlways:
-            break
-        case .authorizedWhenInUse:
-            break
+        case .authorizedAlways, .authorizedWhenInUse:
+            region = MKCoordinateRegion(center: locationManager.location!.coordinate, span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.1))
         @unknown default:
             break
         }
@@ -70,7 +78,7 @@ final class ContentViewModel : NSObject, ObservableObject , CLLocationManagerDel
         
     }
     
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {          //locationManagerDidChangeAuthorization is a delegate method
         checkApplicationAuthorization()
         
         //The system calls the delegate’s locationManagerDidChangeAuthorization(_:) method immediately when you create a location manager, and again when the app’s authorization changes. The delegate handles all location and heading-related updates and events.
